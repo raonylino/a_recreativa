@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+
+  // Arquivo original
+  originalFileName String
+  originalFilePath String
+  originalFileType String // pdf ou docx
+
+  // Dados estruturados do plano de aula
+  objectives      String? // JSON array
+  activities      String? // JSON array
+  evaluation      String?
+  resources       String?
+  duration        String?
+  targetAudience  String?
+  subject         String?
+
+  // Documento padronizado gerado
+  standardizedFilePath String?
+  standardizedAt       DateTime?
+
+  // Metadados
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+}

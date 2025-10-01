@@ -1,0 +1,40 @@
+{
+  "name": "a-recreativa-backend",
+  "version": "1.0.0",
+  "description": "Backend para organização de planos de aula com DDD",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --ignore-watch node_modules src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "prisma:migrate": "prisma migrate dev --schema=./src/infra/database/prisma/schema.prisma",
+    "prisma:generate": "prisma generate --schema=./src/infra/database/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=./src/infra/database/prisma/schema.prisma"
+  },
+  "keywords": [
+    "lesson-plan",
+    "ddd",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^6.16.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mammoth": "^1.11.0",
+    "multer": "^2.0.2",
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.6.1",
+    "prisma": "^6.16.3",
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3"
+  }
+}

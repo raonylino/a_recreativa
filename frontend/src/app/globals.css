@@ -24,3 +24,28 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Estilos personalizados para Ant Design */
+.ant-layout-header {
+  display: flex;
+  align-items: center;
+}
+
+/* Melhoria na visualização de listas no formulário */
+.ant-form-item-control-input-content {
+  width: 100%;
+}
+
+/* Estilo para o iframe de preview */
+iframe {
+  border-radius: 6px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+
+  .ant-descriptions-item-label,
+  .ant-descriptions-item-content {
+    padding: 8px !important;
+  }
+}

@@ -1,103 +1,199 @@
-import Image from "next/image";
+'use client';
+
+import { Document, DocumentStatus, documentService } from '@/services/api';
+import { DownloadOutlined, EditOutlined, EyeOutlined, FilePdfOutlined, FileTextOutlined, UploadOutlined } from '@ant-design/icons';
+import type { TableColumnsType, UploadProps } from 'antd';
+import { Button, Card, Divider, Layout, Space, Table, Tag, Typography, Upload, message } from 'antd';
+import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+dayjs.locale('pt-br');
+
+const { Header, Content } = Layout;
+const { Title, Paragraph } = Typography;
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const router = useRouter();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  // Carregar documentos ao montar
+  useEffect(() => {
+    loadDocuments();
+  }, []);
+
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      const data = await documentService.list();
+      setDocuments(data);
+    } catch (error) {
+      message.error('Erro ao carregar documentos');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadProps: UploadProps = {
+    name: 'file',
+    accept: '.pdf,.doc,.docx',
+    multiple: false,
+    showUploadList: false,
+    customRequest: async ({ file, onSuccess, onError }) => {
+      try {
+        setUploading(true);
+        const uploadedDoc = await documentService.upload(file as File);
+        message.success(`${uploadedDoc.originalFileName} enviado com sucesso!`);
+        onSuccess?.(uploadedDoc);
+        loadDocuments(); // Recarregar lista
+      } catch (error) {
+        message.error('Erro ao enviar arquivo');
+        onError?.(error as Error);
+      } finally {
+        setUploading(false);
+      }
+    },
+  };
+
+  const getStatusTag = (status: DocumentStatus) => {
+    const statusConfig: Record<DocumentStatus, { color: string; text: string }> = {
+      [DocumentStatus.UPLOADED]: { color: 'blue', text: 'Enviado' },
+      [DocumentStatus.PROCESSING]: { color: 'orange', text: 'Processando' },
+      [DocumentStatus.STRUCTURED]: { color: 'purple', text: 'Estruturado' },
+      [DocumentStatus.STANDARDIZED]: { color: 'green', text: 'Padronizado' },
+      [DocumentStatus.ERROR]: { color: 'red', text: 'Erro' },
+    };
+
+    const config = statusConfig[status];
+    return <Tag color={config.color}>{config.text}</Tag>;
+  };
+
+  const columns: TableColumnsType<Document> = [
+    {
+      title: 'Arquivo',
+      dataIndex: 'originalFileName',
+      key: 'originalFileName',
+      render: (text: string, record: Document) => (
+        <Space>
+          {record.originalMimeType.includes('pdf') ? <FilePdfOutlined /> : <FileTextOutlined />}
+          <span>{text}</span>
+        </Space>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: DocumentStatus) => getStatusTag(status),
+      filters: [
+        { text: 'Enviado', value: DocumentStatus.UPLOADED },
+        { text: 'Estruturado', value: DocumentStatus.STRUCTURED },
+        { text: 'Padronizado', value: DocumentStatus.STANDARDIZED },
+      ],
+      onFilter: (value: any, record: { status: any; }) => record.status === value,
+    },
+    {
+      title: 'Data de Upload',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => dayjs(date).format('DD/MM/YYYY HH:mm'),
+      sorter: (a: { createdAt: any; }, b: { createdAt: any; }) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
+    },
+    {
+      title: 'Tamanho',
+      dataIndex: 'fileSize',
+      key: 'fileSize',
+      render: (size: number) => `${(size / 1024).toFixed(2)} KB`,
+    },
+    {
+      title: 'Ações',
+      key: 'actions',
+      render: (_: any, record: Document) => (
+        <Space size="small">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => router.push(`/documents/${record.id}`)}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            Visualizar
+          </Button>
+          {record.status === DocumentStatus.UPLOADED && (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => router.push(`/documents/${record.id}/edit`)}
+            >
+              Estruturar
+            </Button>
+          )}
+          {record.status === DocumentStatus.STANDARDIZED && record.standardizedFilePath && (
+            <Button
+              type="default"
+              icon={<DownloadOutlined />}
+              href={documentService.downloadStandardized(record.id)}
+              target="_blank"
+            >
+              PDF
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Header style={{ background: '#fff', padding: '0 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <Title level={3} style={{ margin: '16px 0' }}>
+          📚 Gestão de Planos de Aula
+        </Title>
+      </Header>
+
+      <Content style={{ padding: '24px', background: '#f0f2f5' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+          {/* Card de Upload */}
+          <Card style={{ marginBottom: 24 }}>
+            <Title level={4}>Enviar Novo Plano de Aula</Title>
+            <Paragraph type="secondary">
+              Faça upload de seus planos de aula em PDF ou Word (.docx) para organizá-los e padronizá-los.
+            </Paragraph>
+            <Upload {...uploadProps}>
+              <Button
+                icon={<UploadOutlined />}
+                size="large"
+                type="primary"
+                loading={uploading}
+              >
+                {uploading ? 'Enviando...' : 'Selecionar Arquivo'}
+              </Button>
+            </Upload>
+          </Card>
+
+          <Divider />
+
+          {/* Tabela de Documentos */}
+          <Card>
+            <Title level={4} style={{ marginBottom: 16 }}>
+              Documentos ({documents.length})
+            </Title>
+            <Table
+              columns={columns}
+              dataSource={documents}
+              rowKey="id"
+              loading={loading}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total: any) => `Total de ${total} documentos`,
+              }}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </Content>
+    </Layout>
   );
 }

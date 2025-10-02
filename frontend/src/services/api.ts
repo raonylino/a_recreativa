@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -60,8 +60,9 @@ export const documentService = {
 
   // Listar todos os documentos
   list: async (): Promise<Document[]> => {
-    const { data } = await api.get<Document[]>('/documents');
-    return data;
+    console.log("requisitando todos os documentos para /docuements")
+    const { data } = await api.get('/documents');
+    return data.data;
   },
 
   // Buscar documento por ID

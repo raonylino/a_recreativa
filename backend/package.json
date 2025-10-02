@@ -4,7 +4,7 @@
   "description": "Backend para organização de planos de aula com DDD",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --ignore-watch node_modules src/server.ts",
+    "dev": "clear && ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "prisma:migrate": "prisma migrate dev --schema=./src/infra/database/prisma/schema.prisma",
